@@ -8,10 +8,10 @@ metadata:
   name: server-app-cartrawler
 spec:
   ports:
-  - name: 8000-8000
-    port: 8000
-    protocol: TCP
-    targetPort: 8000
+    - name: 8000-8000
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
   selector:
     app: server-app-cartrawler
   type: NodePort
