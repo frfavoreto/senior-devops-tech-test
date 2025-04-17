@@ -19,7 +19,7 @@ spec:
         app: server-app-cartrawler
     spec:
       containers:
-        - image: docker.io/frfavoreto/server-app:v2
+        - image: ${IMAGE_NAME}:${IMAGE_TAG}
           name: server-app
           ports:
             - containerPort: 8000
