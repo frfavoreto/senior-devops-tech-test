@@ -4,13 +4,13 @@ pipeline {
   environment {
     AWS_REGION = 'us-east-1'
     ECR_REPO = 'your-ecr-repo-url'
-    IMAGE_TAG = "sample-node-app:${env.BUILD_NUMBER}"
+    IMAGE_TAG = "server-app:${env.BUILD_NUMBER}"
   }
 
   stages {
     stage('Checkout') {
       steps {
-        checkout scm
+		git https://github.com/frfavoreto/senior-devops-tech-test.git
       }
   }
 
@@ -32,9 +32,9 @@ pipeline {
   stage('Build Docker Image') {
     steps {
       script {
-        docker.build("$IMAGE_TAG", './app')
+        dockerimage = docker.build("$IMAGE_TAG", './app')
       }
-    }
+    }i
   }
 
   stage('Push to ECR') {

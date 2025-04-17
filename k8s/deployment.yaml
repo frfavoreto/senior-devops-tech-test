@@ -1,0 +1,27 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: server-app-cartrawler
+  name: server-app-cartrawler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-app-cartrawler
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: server-app-cartrawler
+    spec:
+      containers:
+      - image: docker.io/frfavoreto/server-app:v2
+        name: server-app
+        ports:
+        - containerPort: 8000
+        resources: {}
+status: {}
