@@ -9,6 +9,12 @@ In a deployment on EKS we would need to refresh the EKS token to access the targ
 
 In order to further improve security to the EKS cluster, the assumed IAM Role in the target AWS Account should restrict the assuming Principals in its Assume Role Policy, restricting access to the Jenkins node and privileged users only. This reduces the exposure surface to any potential compromise of the kubeconfig and AWS credentials. Access to the Jenkins server should also be hardned. 
 
+You can see the commented line in Jenkinsfile:
+
+    // DOCKER_IMAGE_NAME = 'frfavoreto/server-app'
+
+    this is from my tests pushing the image to DockerHub instead of ECR. The image is still publicly available at docker.io/frfavoreto/server-app:latest
+
 There is of course a lot to improve, but as explained above I tried to simplify it and focus on the essentials. Hope this is fine!
 
 Best regards
