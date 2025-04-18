@@ -122,7 +122,7 @@ tolerations: []
 
 affinity: {}
 
-deploymentNamespace: 'jenkins-helm'
+deploymentNamespace: APP_HELM_NAMESPACE
 containerPort: 8000
 imageName: IMAGE_NAME
 imageTag: IMAGE_TAG
