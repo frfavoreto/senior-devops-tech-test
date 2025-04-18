@@ -1,58 +1,117 @@
 pipeline {
-  agent any
-
-  environment {
-    AWS_REGION = 'us-east-1'
-    ECR_REPO = 'your-ecr-repo-url'
-    IMAGE_TAG = "server-app:${env.BUILD_NUMBER}"
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-		git https://github.com/frfavoreto/senior-devops-tech-test.git
-      }
-  }
-
-  stage('Lint') {
-    steps {
-      sh 'yamllint k8s/'
+    agent any
+   
+    environment {
+        AWS_REGION = '<REGION-CODE>'
+        ECR_REPO = '<ECR-REPO-LINK>'
+        GIT_URL = 'https://github.com/frfavoreto/senior-devops-tech-test.git'
+        GIT_BRANCH = 'main'
+        // DOCKER_IMAGE_NAME = 'frfavoreto/server-app'
+        DOCKER_IMAGE_NAME = 'server-app'
+        DOCKER_IMAGE_TAG = 'latest'
+        APP_HELM_NAMESPACE = 'jenkins-helm'
+        KUBECONFIG = "/var/lib/jenkins/.kube/config" //location in jenkins server
     }
-  }
+   
 
-  stage('Test') {
-    steps {
-      dir('app') {
-      sh 'npm install'
-      sh 'npm test'
-      }
-    }
-  }
+        stages {
+            stage('Checkout') {
+              steps {
+                        git (url: 'https://github.com/frfavoreto/senior-devops-tech-test.git', branch: "main")
+              }
+          }
+        
+          stage('Lint') {
+            steps {
+              sh 'sudo apt-get --assume-yes install yamllint'
+              sh 'yamllint k8s/'
+            }
+          }
+        
+          stage('Test') {
+            steps {
+              dir('app') {
+              sh 'npm install'
+              sh 'npm test'
+              }
+            }
+          }
+        
+          stage('Build Docker Image') {
+            steps {
+              script {
+                def dockerImage = docker.build("$DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG", './app')
+              }
+            }
+          }
+        
+        stage('Push to ECR') {
+            steps {
+                script {
+                    // Authenticate Docker client to ECR using AWS CLI
+                    withCredentials([aws(credentialsId: 'AWS-Credentials', region: AWS_REGION)]) {
+                        sh "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO"
+                    }
+                   
+                    // Push Docker image to ECR
+                    sh "docker push $ECR_REPO:${DOCKER_IMAGE_NAME}"
+                }
+            }
+        }
 
-  stage('Build Docker Image') {
-    steps {
-      script {
-        dockerimage = docker.build("$IMAGE_TAG", './app')
-      }
-    }i
-  }
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    // Set KUBECONFIG environment variable
+                    withEnv(["KUBECONFIG=${KUBECONFIG}"]) {
 
-  stage('Push to ECR') {
-    steps {
-      echo 'Simulate push to ECR or implement AWS CLI commands here'
-    }
-  }
+                        // Replace placeholders ${IMAGE_NAME} and ${IMAGE_TAG} in deployment.yaml with the actual jenkins variables
+                        sh "sed -i 's|\${IMAGE_NAME}|${DOCKER_IMAGE_NAME}|' k8s/deployment.yaml"
+                        sh "sed -i 's|\${IMAGE_TAG}|${DOCKER_IMAGE_TAG}|' k8s/deployment.yaml"
+                        
+                        // Ensure 'jenkins' namespace is available
+                        sh "kubectl create namespace jenkins --dry-run=client -o yaml | kubectl apply -f -"
+                        
+                        // Apply deployment.yaml to the EKS cluster
+                        sh "kubectl apply -f k8s/deployment.yaml -n jenkins"
+                        sh "kubectl apply -f k8s/service.yaml -n jenkins"
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to EKS via Helm') {
+            steps {
+                script {
+                    // Set KUBECONFIG environment variable
+                    withEnv(["KUBECONFIG=${KUBECONFIG}"]) {
 
-  stage('Deploy to EKS') {
-    steps {
-      echo 'Simulate deploy to EKS or run kubectl apply'
+                        // Replace placeholders in Helm's values.yaml file with actual values
+                        sh "sed -i 's|IMAGE_NAME|${DOCKER_IMAGE_NAME}|' helm-chart/server-app-cartrawler/values.yaml"
+                        sh "sed -i 's|IMAGE_TAG|${DOCKER_IMAGE_TAG}|' helm-chart/server-app-cartrawler/values.yaml"
+                        sh "sed -i 's|APP_HELM_NAMESPACE|${APP_HELM_NAMESPACE}|' helm-chart/server-app-cartrawler/values.yaml"
+                        
+                        // Ensure the relevant namespace for Helm deployment type is available
+                        sh "kubectl create namespace ${APP_HELM_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+                        
+                        // Install Helm chart
+                        sh "helm upgrade --install server-app-cartrawler ./helm-chart/server-app-cartrawler"    
+
+                    }
+                }
+            }
+        }
     }
-  }
-  }
-  
-  post {
-    always {
-      echo 'Pipeline completed.'
-    }
-  }
+    
+    post {
+            always {
+                //Add channel name
+                slackSend ( 
+                    channel: 'SlackChannelName',
+                    message: "Status of Pipeline Execution:- ${currentBuild.currentResult} ${env.JOB_NAME} ${env.BUILD_NUMBER} ${BUILD_URL}"
+                )
+            }
+        }
+
 }
+

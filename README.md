@@ -1,65 +1,22 @@
-# Senior DevOps Engineer Tech Test (GitHub + Jenkins + AWS)
+GENERAL INFO:
 
-Welcome! This tech test is designed to simulate real-world tasks you'd
-face at Cartrawler. We use GitHub, Jenkins, and AWS (especially EKS and ECR) for our DevOps stack.
+To deploy this application you need to have:
 
----
-## Your Mission
-Build and deploy a simple microservice using Jenkins and Kubernetes on
-AWS. Follow the instructions below and feel free to enhance wherever you see fit!
+- An available EKS Cluster, acessible via kubectl
+- A Jenkins server with:
+    - nodejs and npm installed
+    - docker installed and relevant user permissions given (sudo usermod -aG docker jenkins)
+    - kubectl and helm
+    - kubeconfig file at /var/lib/jenkins/.kube/config (as per 'KUBECONFIG' variable in Jenkinsfile)
+    - AWS Credentials plugin
+- Configure your AWS Credentials and replace AWS_REGION and ECR_REPO values on Jenkinsfile
 
----
-### Part 1: Kubernetes Setup
+Configure your Jenkins server to use 'jenkins/Jenkinsfile'
 
-- Use the provided app or create your own (keep it simple)
-- Define the following K8s manifests in `/k8s`:
-    - `deployment.yaml`
-    - `service.yaml`
-    - `ingress.yaml`
-    - `configmap.yaml`/ `secret.yaml`
-    - Package with Helm library chart in `/helm-chart`
+There are 2 ways to deploy this application from Jenkins Pipeline (choose which one you prefer by editing the Jenkinsfile):
 
-### Part 2: Jenkins Pipeline
-- Create a `Jenkinsfile` that does:
-    1. Checkout
-    2. Lint YAML/K8s (e.g., kubeval/yamllint)
-    3. Run mocked unit tests
-    4. Build and push Docker image to Amazon ECR
-    5. Deploy the k8s resources to EKS in jenkins namespace
-    6. Notify via Slack/email
-    7. Optional: rollback on deploy failure
-
-- Include separate pipelines or stages for `staging` and `production`
-
-> **Note:** If you do not have access to ECR or EKS, you may:
->   - Comment out the related steps in the Jenkinsfile
->   - Add `echo` statements or `sleep` to simulate those stages
->   - Clearly document what would happen at each step
+    1 - Directly via 'kubectl apply', from the manifests in k8s/ directory;
+    2 - Via Helm Chart in helm-chart/server-app-cartrawler directory
 
 
-### Part 3: AWS
-# **Note:** If you do not have access to a live AWS environment (EKS/ECR), that's completely fine.
-#
-# - Please document how you would structure and implement these steps, assuming full access.
-# - You may use mock values or simulate with tools like `minikube`, `kind`, or Docker locally.
-# - The goal is to see your DevOps thinking and approach — infrastructure doesn't need to be live.
-
-- Use AWS CLI to interact with ECR and EKS (can be commented/mocked if no access)
-- Document IAM roles/permissions required
-- Bonus: suggest or include infra-as-code (e.g., Terraform/CDK) for EKS cluster
-
-### Part 4: Documentation
-Document your solution in the `docs/archtiecture.md` file:
-
-    - Considerations in your approach
-    - How you would implement the solution in an existing organisation
-    - Additional things you would consider for long term maintenance
-
----
-##  Submission
-    - Push your code to a public GitHub repo or share a ZIP file
-    - Include a short `README` with setup steps
-    - Make sure everything is runnable and well-commented
-
----
-Good luck, and we’re excited to see what you come up with!
+The application will be deployed and exposed via a Kubernetes Service type NodePort
